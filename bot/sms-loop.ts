@@ -132,13 +132,19 @@ async function tick(): Promise<void> {
         }
       }
 
-      // Route to LLM agent
+      // Demo shortcut: "eggy" triggers a hardcoded Blink payment reply for filming
       let reply: string;
-      try {
-        reply = await processMessage(msg.sender, msg.text, events);
-      } catch (agentErr: any) {
-        log(`  ❌ Agent error: ${agentErr.message}`);
-        reply = 'QUORUM 🎫 Something went wrong on our end — try again in a moment!';
+      if (msg.text.trim().toLowerCase() === 'eggy') {
+        reply = 'QUORUM 🎫 Locked in! 4x GA for Y2K Party — 3-day hold at $5 (0.03 SOL). Pay to confirm:\n\nhttps://dial.to/?action=solana-action:https://quorum.app/pay/hold-001';
+        log(`  🎬 Demo trigger "eggy" — sending hardcoded Blink reply`);
+      } else {
+        // Route to LLM agent
+        try {
+          reply = await processMessage(msg.sender, msg.text, events);
+        } catch (agentErr: any) {
+          log(`  ❌ Agent error: ${agentErr.message}`);
+          reply = 'QUORUM 🎫 Something went wrong on our end — try again in a moment!';
+        }
       }
 
       log(`[OUTBOUND] ${msg.sender}: ${reply.slice(0, 80)}${reply.length > 80 ? '...' : ''}`);
