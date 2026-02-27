@@ -19,8 +19,12 @@ import {
 import { getOptionContracts, getVenueIntel } from './solana';
 import { handleInboundSMS, parseCommand } from '../bot/sms-handler';
 import { runHoldCycle, getSharedBrowser } from '../bot/holder';
+import blinkRouter from './blink';
 
 const router = Router();
+
+// Solana Blinks / Actions
+router.use('/blink', blinkRouter);
 
 // GET /api/events — scraped LPR event listings
 router.get('/events', async (req: Request, res: Response) => {

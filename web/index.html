@@ -551,17 +551,17 @@
     <div class="form-group">
       <label>Lock Duration (Option Premium)</label>
       <div class="duration-options">
-        <div class="duration-btn selected" onclick="selectDuration(this, 3, 5)">
+        <div class="duration-btn selected" onclick="selectDuration(this, 3, 0.03)">
           <div class="duration-label">3 days</div>
-          <div class="duration-price">5 SOL</div>
+          <div class="duration-price">$5 (0.03 SOL)</div>
         </div>
-        <div class="duration-btn" onclick="selectDuration(this, 7, 10)">
+        <div class="duration-btn" onclick="selectDuration(this, 7, 0.06)">
           <div class="duration-label">7 days</div>
-          <div class="duration-price">10 SOL</div>
+          <div class="duration-price">$10 (0.06 SOL)</div>
         </div>
         <div class="duration-btn disabled" onclick="">
           <div class="duration-label">30 days</div>
-          <div class="duration-price" style="color:var(--text-muted)">25 SOL</div>
+          <div class="duration-price" style="color:var(--text-muted)">$25 (0.15 SOL)</div>
           <div class="duration-coming-soon">coming soon</div>
         </div>
       </div>
@@ -606,7 +606,7 @@
   // ==============================
   let currentModalEvent = null;
   let selectedDurationDays = 3;
-  let selectedPremiumSOL = 5;
+  let selectedPremiumSOL = 0.03;
   let currentBuyHoldId = null;
   let holdsRefreshInterval = null;
 

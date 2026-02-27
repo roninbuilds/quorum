@@ -107,7 +107,7 @@ async function tick(): Promise<void> {
       }
 
       // We have a new inbound fan message
-      log(`📩 INBOUND [${msg.sender}]: "${msg.text.slice(0, 80)}${msg.text.length > 80 ? '...' : ''}"`);
+      log(`[INBOUND] ${msg.sender}: ${msg.text.slice(0, 80)}${msg.text.length > 80 ? '...' : ''}`);
 
       // Get current events (use cache if fresh, otherwise fetch)
       let events = getCachedEvents();
@@ -130,7 +130,7 @@ async function tick(): Promise<void> {
         reply = 'QUORUM 🎫 Something went wrong on our end — try again in a moment!';
       }
 
-      log(`📤 OUTBOUND [${msg.sender}]: "${reply.slice(0, 80)}${reply.length > 80 ? '...' : ''}"`);
+      log(`[OUTBOUND] ${msg.sender}: ${reply.slice(0, 80)}${reply.length > 80 ? '...' : ''}`);
 
       // Send reply via iMessage/SMS
       try {
@@ -166,7 +166,7 @@ async function run(): Promise<void> {
     log(`⚠️  Initial scrape failed: ${err.message}`);
   }
 
-  log('👂 Listening for fan messages...\n');
+  log('QUORUM SMS BOT READY — waiting for inbound texts\n');
 
   // Poll loop
   while (true) {

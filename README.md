@@ -13,8 +13,8 @@ Right now, every group attending a show goes through the same painful loop: "Are
 
 **Quorum fixes this with a call options market on tickets.**
 
-- **Fans** pay a small SOL premium to lock in their right to buy tickets at face value for up to 30 days. No more FOMO, no more group chat paralysis.
-- **Venues** earn royalties on option premiums — and more importantly, they get demand intelligence they currently leave on the table. When fans pay 8 SOL to lock in a sold-out show, that's a signal. Add a late show. Book a bigger venue next time.
+- **Fans** pay a small SOL premium to lock in their right to buy tickets at face value for up to 7 days ($5 for 3 days / $10 for 7 days). No more FOMO, no more group chat paralysis.
+- **Venues** earn royalties on option premiums — and more importantly, they get demand intelligence they currently leave on the table. When fans pay to lock in a sold-out show, that's a signal. Add a late show. Book a bigger venue next time.
 - **Options premiums reveal real demand intensity** — something a flat-price waitlist can *never* capture. Your waitlist tells you *how many* people want tickets. The options market tells you *how badly*.
 
 ---
@@ -83,6 +83,8 @@ Yes, this is absurd. That's the point.
 │  POST /api/hold         → start hold cycle              │
 │  GET  /api/options      → on-chain option contracts     │
 │  GET  /api/venue-intel  → demand intelligence           │
+│  GET  /api/blink/:id    → Solana Actions descriptor     │
+│  POST /api/blink/:id/pay → base64 option tx             │
 └───────────────────────┬─────────────────────────────────┘
                         │
                         ▼
@@ -208,6 +210,54 @@ DROP                    → Release the hold
 
 ---
 
+## Option Pricing
+
+| Duration | USD | SOL |
+|---|---|---|
+| 3 days | $5 | 0.03 SOL |
+| 7 days | $10 | 0.06 SOL |
+| 30 days | $25 | 0.15 SOL (coming soon) |
+
+---
+
+## Solana Blinks
+
+Quorum implements the [Solana Actions spec](https://solana.com/docs/advanced/actions). Any Blink-compatible wallet can pay the option premium without leaving Twitter/Telegram/Discord:
+
+```
+GET  /api/blink/:holdId              → Action JSON descriptor
+POST /api/blink/:holdId/pay?duration=3|7  → base64 wire-format transaction
+```
+
+The LLM chatbot sends a `https://dial.to/?action=solana-action:...` URL in SMS when the fan is ready to pay.
+
+For public Blinks URLs, run ngrok and set `PUBLIC_URL` in `.env`:
+
+```bash
+ngrok http 3000
+# export PUBLIC_URL=https://xxxx.ngrok-free.app
+```
+
+---
+
+## LLM SMS Chatbot
+
+Quorum includes a Claude claude-sonnet-4-6 powered chatbot that handles freeform fan messages over iMessage:
+
+- Parses natural language: "hold 2 GA for Florist this Saturday, 3 days"
+- Maintains per-conversation history (last 10 turns per phone number)
+- Rate-limits to 20 API calls/phone/hour
+- Guards against prompt injection and jailbreak attempts
+- Sends Solana Blink payment URL when ready to lock the hold
+- Logs cost per call and alerts at $2 cumulative
+
+```bash
+# Test the chatbot directly
+npm run test:chat
+```
+
+---
+
 ## Act 3: The Ask
 
 Dear KYD Labs:
@@ -227,7 +277,7 @@ Now build the real one. The options market for live events is waiting.
 
 ---
 
-**Deployed Program:** [`FJiPMReDe4hdixbgqNQ7MZUHTszYXdXG8FPXKxoKe9vQ`](https://explorer.solana.com/address/FJiPMReDe4hdixbgqNQ7MZUHTszYXdXG8FPXKxoKe9vQ?cluster=devnet)
+**Deployed Program:** [`FC1476pqPa9YtMiXVk2QTFMNEjfh8P16HiEM3DihHhqy`](https://explorer.solana.com/address/FC1476pqPa9YtMiXVk2QTFMNEjfh8P16HiEM3DihHhqy?cluster=devnet)
 
 *Built with 🫠 and checkout timeouts*
 *Solana Graveyard Hackathon × KYD Labs $5K Ticketing Bounty*

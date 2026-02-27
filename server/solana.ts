@@ -112,8 +112,8 @@ function getSeedOptions(): OptionContract[] {
       eventDate: '2026-03-01',
       ticketType: 'General Admission',
       quantity: 2,
-      premiumLamports: 3_000_000_000, // 3 SOL
-      premiumSOL: 3,
+      premiumLamports: 30_000_000, // 0.03 SOL
+      premiumSOL: 0.03,
       holder: 'J61DVHFHFEpQTKpx7nCEAgNPNhebtaDJ1jFzxvLYbxxA',
       expiry: now + (3 * day),
       expiryDate: new Date((now + 3 * day) * 1000).toISOString().split('T')[0],
@@ -129,8 +129,8 @@ function getSeedOptions(): OptionContract[] {
       eventDate: '2026-03-07',
       ticketType: 'VIP',
       quantity: 4,
-      premiumLamports: 8_000_000_000, // 8 SOL — sold out show = high demand
-      premiumSOL: 8,
+      premiumLamports: 60_000_000, // 0.06 SOL — sold out show = high demand
+      premiumSOL: 0.06,
       holder: 'J61DVHFHFEpQTKpx7nCEAgNPNhebtaDJ1jFzxvLYbxxA',
       expiry: now + (3 * day),
       expiryDate: new Date((now + 3 * day) * 1000).toISOString().split('T')[0],
@@ -146,8 +146,8 @@ function getSeedOptions(): OptionContract[] {
       eventDate: '2026-03-14',
       ticketType: 'General Admission',
       quantity: 1,
-      premiumLamports: 2_000_000_000, // 2 SOL
-      premiumSOL: 2,
+      premiumLamports: 30_000_000, // 0.03 SOL
+      premiumSOL: 0.03,
       holder: 'J61DVHFHFEpQTKpx7nCEAgNPNhebtaDJ1jFzxvLYbxxA',
       expiry: now - (2 * day), // already exercised
       expiryDate: new Date((now - 2 * day) * 1000).toISOString().split('T')[0],
@@ -163,8 +163,8 @@ function getSeedOptions(): OptionContract[] {
       eventDate: '2026-03-15',
       ticketType: 'General Admission',
       quantity: 2,
-      premiumLamports: 5_000_000_000, // 5 SOL
-      premiumSOL: 5,
+      premiumLamports: 60_000_000, // 0.06 SOL
+      premiumSOL: 0.06,
       holder: 'J61DVHFHFEpQTKpx7nCEAgNPNhebtaDJ1jFzxvLYbxxA',
       expiry: now - (1 * day), // expired
       expiryDate: new Date((now - 1 * day) * 1000).toISOString().split('T')[0],
@@ -224,10 +224,11 @@ export function getVenueIntel(options: OptionContract[]) {
     entry.avgPremiumSOL = entry.totalOptions > 0 ? entry.totalPremiumSOL / entry.totalOptions : 0;
 
     // Demand scoring: higher premium + more options = more demand
+    // Thresholds calibrated for 0.03–0.06 SOL premiums
     const demandScore = entry.avgPremiumSOL * entry.activeOptions;
-    if (demandScore >= 20) entry.demand = 'CRITICAL';
-    else if (demandScore >= 8) entry.demand = 'HIGH';
-    else if (demandScore >= 3) entry.demand = 'MEDIUM';
+    if (demandScore >= 0.20) entry.demand = 'CRITICAL';
+    else if (demandScore >= 0.10) entry.demand = 'HIGH';
+    else if (demandScore >= 0.04) entry.demand = 'MEDIUM';
     else entry.demand = 'LOW';
 
     return entry;

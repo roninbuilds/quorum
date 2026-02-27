@@ -17,7 +17,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
-const PROGRAM_ID_STR = process.env.QUORUM_PROGRAM_ID || 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS';
+const PROGRAM_ID_STR = process.env.QUORUM_PROGRAM_ID || 'FC1476pqPa9YtMiXVk2QTFMNEjfh8P16HiEM3DihHhqy';
 
 async function loadWallet(): Promise<Keypair> {
   const keyPath = os.homedir() + '/.config/solana/id.json';
@@ -43,7 +43,7 @@ const SEED_OPTIONS: SeedOption[] = [
     eventDate: '2026-03-01',
     ticketType: 'General Admission',
     quantity: 2,
-    premiumSOL: 3,
+    premiumSOL: 0.03,
     daysFromNow: 3, // expires in 3 days
     status: 'Active',
   },
@@ -53,7 +53,7 @@ const SEED_OPTIONS: SeedOption[] = [
     eventDate: '2026-03-07',
     ticketType: 'VIP',
     quantity: 4,
-    premiumSOL: 8, // sold out = higher premium
+    premiumSOL: 0.06, // sold out = higher premium
     daysFromNow: 3,
     status: 'Active',
   },
@@ -63,7 +63,7 @@ const SEED_OPTIONS: SeedOption[] = [
     eventDate: '2026-03-14',
     ticketType: 'General Admission',
     quantity: 1,
-    premiumSOL: 2,
+    premiumSOL: 0.03,
     daysFromNow: -1, // expired yesterday
     status: 'Exercised',
   },
@@ -73,7 +73,7 @@ const SEED_OPTIONS: SeedOption[] = [
     eventDate: '2026-03-15',
     ticketType: 'General Admission',
     quantity: 2,
-    premiumSOL: 5,
+    premiumSOL: 0.06,
     daysFromNow: -2, // expired 2 days ago
     status: 'Expired',
   },

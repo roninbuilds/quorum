@@ -288,7 +288,7 @@
     <p>
       A flat-price waitlist tells you how many people want tickets. Options premiums tell you
       <strong>how badly they want them</strong> — and how much they're willing to pay for price certainty.
-      When fans pay 8 SOL to lock in a sold-out show, that's a signal. Gimme Gimme Disco could
+      When fans pay $10 (0.06 SOL) to lock in a sold-out show, that's a signal. Gimme Gimme Disco could
       sell a late show. Florist demand is growing. This is what venues are missing.
     </p>
   </div>
@@ -395,7 +395,7 @@
     const grid = document.getElementById('summary-stats');
     grid.innerHTML = `
       <div class="summary-card">
-        <div class="summary-value" style="color:var(--purple)">${intel.totalPremiumSOL?.toFixed(1)} SOL</div>
+        <div class="summary-value" style="color:var(--purple)">${intel.totalPremiumSOL?.toFixed(3)} SOL</div>
         <div class="summary-label">Total Premium Revenue</div>
         <div class="summary-sublabel">from ${intel.totalOptionsCount} contracts</div>
       </div>
@@ -442,7 +442,7 @@
             <div class="metric-label">Active Options</div>
           </div>
           <div class="metric">
-            <div class="metric-value">${event.avgPremiumSOL?.toFixed(1)} SOL</div>
+            <div class="metric-value">${event.avgPremiumSOL?.toFixed(3)} SOL</div>
             <div class="metric-label">Avg Premium</div>
           </div>
           <div class="metric">
@@ -472,9 +472,9 @@
 
     for (const e of events) {
       if (e.demand === 'CRITICAL') {
-        insights.push(`<strong>${esc(e.eventName)}</strong> premiums avg ${e.avgPremiumSOL?.toFixed(1)} SOL — this show is sold out but demand is unmet. Adding a late show could capture 40%+ more revenue.`);
+        insights.push(`<strong>${esc(e.eventName)}</strong> premiums avg ${e.avgPremiumSOL?.toFixed(3)} SOL — this show is sold out but demand is unmet. Adding a late show could capture 40%+ more revenue.`);
       } else if (e.demand === 'HIGH') {
-        insights.push(`<strong>${esc(e.eventName)}</strong> has ${e.activeOptions} active options with ${e.avgPremiumSOL?.toFixed(1)} SOL avg premium. Demand is growing — consider a larger venue for the next booking.`);
+        insights.push(`<strong>${esc(e.eventName)}</strong> has ${e.activeOptions} active options with ${e.avgPremiumSOL?.toFixed(3)} SOL avg premium. Demand is growing — consider a larger venue for the next booking.`);
       } else if (e.demand === 'LOW' && e.totalOptions === 0) {
         insights.push(`<strong>${esc(e.eventName)}</strong> has no active options. Either demand is low, or the event hasn't been listed for holding yet.`);
       }
