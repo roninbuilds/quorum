@@ -45,8 +45,11 @@ function log(msg: string) {
 // Track highest seen rowid so we never process the same message twice
 let lastSeenRowId = 0;
 
-// Track start time — don't process messages that existed before loop started
-const loopStartTimestamp = Math.floor(Date.now() / 1000) - 5; // 5s buffer for clock skew
+// Look back 10 minutes on startup to catch messages received while the server was down.
+// Safe because: bot echo messages from old runs are typically >10 min old, and
+// the QUORUM_PREFIX_GUARD below skips any bot echoes that do fall in the window.
+const STARTUP_LOOKBACK_SECONDS = 10 * 60; // 10 minutes
+const loopStartTimestamp = Math.floor(Date.now() / 1000) - STARTUP_LOOKBACK_SECONDS;
 
 /**
  * Normalize a phone number to a consistent format for deduplication.
@@ -91,6 +94,14 @@ async function tick(): Promise<void> {
 
       // Skip messages with no text
       if (!msg.text || msg.text.trim() === '') continue;
+
+      // Permanent bot-echo guard: bot replies always start with "QUORUM 🎫".
+      // If an outbound message is stored with is_from_me=0 (AppleScript/macOS quirk),
+      // this catches it across restarts when the sentTexts map is empty.
+      if (msg.text.startsWith('QUORUM 🎫')) {
+        log(`  🤖 Skipping bot-echo message from ${msg.sender} (starts with "QUORUM 🎫")`);
+        continue;
+      }
 
       // Echo guard: skip if this text matches something we recently sent
       if (sentTexts.has(msg.text)) {
@@ -152,9 +163,24 @@ async function tick(): Promise<void> {
 async function run(): Promise<void> {
   log('=== QUORUM SMS LOOP STARTED ===');
   log(`Polling chat.db every ${POLL_INTERVAL_MS / 1000}s for fan messages`);
-  log(`Filtering: KYD 2FA (${KYD_2FA_SENDER}), outbound (is_from_me=0 in SQL)`);
-  log(`Echo guard: TTL ${SENT_TEXT_TTL_MS / 1000}s | Cooldown: ${COOLDOWN_MS / 1000}s per number`);
+  log(`Startup lookback: ${STARTUP_LOOKBACK_SECONDS / 60} minutes (catches messages missed while down)`);
+  log(`Filtering: KYD 2FA (${KYD_2FA_SENDER}), bot echoes (QUORUM 🎫 prefix), cooldown ${COOLDOWN_MS / 1000}s`);
   log(`Bot phone: ${BOT_PHONE || '(not configured)'}`);
+  log('');
+
+  // ── Verify Anthropic API key ─────────────────────────────────────────────────
+  const hasApiKey = !!(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.length > 10);
+  log(`🔑 Anthropic API key: ${hasApiKey ? 'loaded ✅' : '❌ MISSING — LLM replies will fail!'}`);
+
+  // ── Startup diagnostic: show what's visible in the lookback window ──────────
+  log(`🔍 Scanning chat.db for messages in the last ${STARTUP_LOOKBACK_SECONDS / 60} min...`);
+  const startupVisible = getRecentMessages(loopStartTimestamp);
+  const inboundOnly = startupVisible.filter(m => !m.text.startsWith('QUORUM 🎫'));
+  log(`   Total in window: ${startupVisible.length} | Non-bot inbound: ${inboundOnly.length}`);
+  for (const m of startupVisible.slice(0, 8)) {
+    const tag = m.text.startsWith('QUORUM 🎫') ? '[BOT-ECHO skip]' : '[INBOUND queue]';
+    log(`   ${tag} rowid=${m.rowid} from=${m.sender} | "${m.text.slice(0, 55)}"`);
+  }
   log('');
 
   // Initial scrape so first messages have event context immediately

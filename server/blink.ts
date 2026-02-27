@@ -32,7 +32,7 @@ const blinkCors = cors({
 });
 
 router.use(blinkCors);
-router.options('*', blinkCors); // preflight
+router.options('/{*path}', blinkCors); // preflight — Express v5 / path-to-regexp v8 syntax
 
 // ─── Anchor instruction discriminator ────────────────────────────────────────
 function discriminator(name: string): Buffer {
