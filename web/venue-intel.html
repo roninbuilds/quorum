@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QUORUM — Venue Intelligence</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #e8e8e8;
+      --text-muted: #888;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --purple: #a855f7;
+      --orange: #f97316;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo span { color: var(--accent); }
+    .logo-sub { font-size: 13px; color: var(--text-muted); }
+    .back-link {
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--surface2);
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .back-link:hover { color: var(--text); text-decoration: none; border-color: var(--accent); }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+    /* HERO PITCH */
+    .pitch-banner {
+      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(168,85,247,0.08));
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 40px;
+    }
+    .pitch-banner h1 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .pitch-banner p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 720px;
+    }
+    .pitch-banner strong { color: var(--text); }
+
+    /* SUMMARY STATS */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .summary-value { font-size: 32px; font-weight: 800; color: #fff; }
+    .summary-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .summary-sublabel { font-size: 11px; color: var(--text-muted); opacity: 0.6; margin-top: 2px; }
+
+    /* EVENT DEMAND CARDS */
+    section h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .demand-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .demand-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .demand-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+    }
+    .demand-CRITICAL::before { background: var(--red); }
+    .demand-HIGH::before { background: var(--green); }
+    .demand-MEDIUM::before { background: var(--yellow); }
+    .demand-LOW::before { background: var(--border); }
+
+    .demand-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .demand-event-name { font-size: 15px; font-weight: 700; }
+    .demand-event-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .demand-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    .badge-CRITICAL { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-HIGH { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-MEDIUM { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .badge-LOW { background: var(--surface2); color: var(--text-muted); }
+
+    .demand-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .metric { text-align: center; }
+    .metric-value { font-size: 18px; font-weight: 700; }
+    .metric-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .venue-share {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .venue-share-label { color: var(--text-muted); }
+    .venue-share-value { font-weight: 700; color: var(--purple); }
+
+    /* INSIGHTS */
+    .insights-section { margin-bottom: 40px; }
+    .insight-card {
+      background: var(--surface);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .insight-icon { margin-right: 8px; }
+
+    /* RAW DATA TABLE */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 16px;
+    }
+    .data-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .data-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface2); }
+    .table-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    /* STATUS BADGE */
+    .status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .status-Active { background: rgba(34,197,94,0.15); color: var(--green); }
+    .status-Exercised { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .status-Expired { background: var(--surface2); color: var(--text-muted); }
+
+    /* CTA */
+    .dear-kyd {
+      background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(59,130,246,0.08));
+      border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .dear-kyd h2 { font-size: 20px; margin-bottom: 12px; }
+    .dear-kyd p { font-size: 14px; color: var(--text-muted); line-height: 1.7; max-width: 640px; margin: 0 auto 16px; }
+    .cta-btn {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: default;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      header { padding: 16px; }
+      main { padding: 16px; }
+      .demand-metrics { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">QU<span>O</span>RUM <span style="color:var(--text-muted);font-weight:400;font-size:16px">/ Venue Intel</span></div>
+    <div class="logo-sub">Options premiums as demand signals — what your waitlist can never tell you</div>
+  </div>
+  <a href="/" class="back-link">← Back to Dashboard</a>
+</header>
+
+<main>
+
+  <!-- PITCH -->
+  <div class="pitch-banner">
+    <h1>📊 The Options Market Knows Something Your Waitlist Doesn't</h1>
+    <p>
+      A flat-price waitlist tells you how many people want tickets. Options premiums tell you
+      <strong>how badly they want them</strong> — and how much they're willing to pay for price certainty.
+      When fans pay 8 SOL to lock in a sold-out show, that's a signal. Gimme Gimme Disco could
+      sell a late show. Florist demand is growing. This is what venues are missing.
+    </p>
+  </div>
+
+  <!-- SUMMARY STATS -->
+  <div class="summary-grid" id="summary-stats">
+    <div class="summary-card">
+      <div class="summary-value"><span class="spinner"></span></div>
+      <div class="summary-label">Total Premium Revenue</div>
+    </div>
+  </div>
+
+  <!-- EVENT DEMAND CARDS -->
+  <section>
+    <h2>🔥 Event Demand Signals</h2>
+    <div class="demand-grid" id="demand-grid">
+      <div style="color:var(--text-muted);font-size:14px;padding:20px;">
+        <span class="spinner"></span> Loading demand data...
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="insights-section">
+    <h2>💡 Venue Insights</h2>
+    <div id="insights-container">
+      <div style="color:var(--text-muted)">Loading insights...</div>
+    </div>
+  </section>
+
+  <!-- RAW CONTRACT DATA -->
+  <section>
+    <h2>📜 Raw Option Contract Data</h2>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Date</th>
+            <th>Qty</th>
+            <th>Type</th>
+            <th>Premium</th>
+            <th>Expiry</th>
+            <th>Status</th>
+            <th>Venue Share</th>
+          </tr>
+        </thead>
+        <tbody id="contracts-table-body">
+          <tr><td colspan="8" style="color:var(--text-muted);text-align:center;padding:20px;">
+            <span class="spinner"></span> Loading...
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DEAR KYD CTA -->
+  <div class="dear-kyd">
+    <h2>🙏 Dear KYD Labs: Please Build an API</h2>
+    <p>
+      Quorum built the janky version — a Playwright bot exploiting your checkout timeout to hold
+      tickets indefinitely. With <strong>proper programmatic access to Tix</strong>, this becomes
+      a real options protocol. Venues set royalty rates on option premiums. Fans get financial
+      instruments on tickets. The options market generates the demand intelligence that transforms
+      how you book and price shows.
+    </p>
+    <p>
+      We built this in one night to show you what's possible. Now build the real one.
+    </p>
+    <div class="cta-btn">Built for Solana Graveyard × KYD Labs $5K Bounty ⚡</div>
+  </div>
+
+</main>
+
+<footer>
+  QUORUM Venue Intelligence Panel &nbsp;|&nbsp;
+  Powered by Solana devnet ⚡ &nbsp;|&nbsp;
+  Solana Graveyard Hackathon
+</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', loadVenueIntel);
+
+  async function loadVenueIntel() {
+    try {
+      const [intelRes, optionsRes] = await Promise.all([
+        fetch('/api/venue-intel'),
+        fetch('/api/options'),
+      ]);
+      const intel = (await intelRes.json()).intel;
+      const options = (await optionsRes.json()).options || [];
+
+      renderSummary(intel);
+      renderDemandCards(intel.events);
+      renderInsights(intel);
+      renderContractsTable(options);
+    } catch (err) {
+      document.getElementById('demand-grid').innerHTML =
+        `<div style="color:var(--red)">Error: ${err.message}</div>`;
+    }
+  }
+
+  function renderSummary(intel) {
+    const grid = document.getElementById('summary-stats');
+    grid.innerHTML = `
+      <div class="summary-card">
+        <div class="summary-value" style="color:var(--purple)">${intel.totalPremiumSOL?.toFixed(1)} SOL</div>
+        <div class="summary-label">Total Premium Revenue</div>
+        <div class="summary-sublabel">from ${intel.totalOptionsCount} contracts</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-value" style="color:var(--green)">${intel.totalVenueShareSOL?.toFixed(2)} SOL</div>
+        <div class="summary-label">Venue Share (10%)</div>
+        <div class="summary-sublabel">your cut at current royalty rate</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-value" style="color:var(--accent)">${intel.activeOptionsCount}</div>
+        <div class="summary-label">Active Options</div>
+        <div class="summary-sublabel">fans currently holding locks</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-value" style="color:var(--yellow)">${intel.events?.length || 0}</div>
+        <div class="summary-label">Events with Options</div>
+        <div class="summary-sublabel">with measurable demand signals</div>
+      </div>
+    `;
+  }
+
+  function renderDemandCards(events) {
+    const grid = document.getElementById('demand-grid');
+    if (!events?.length) {
+      grid.innerHTML = '<div style="color:var(--text-muted)">No demand data available.</div>';
+      return;
+    }
+
+    const demandIcon = { CRITICAL: '🔴', HIGH: '🟢', MEDIUM: '🟡', LOW: '⚪' };
+
+    grid.innerHTML = events.map(event => `
+      <div class="demand-card demand-${event.demand}">
+        <div class="demand-header">
+          <div>
+            <div class="demand-event-name">${esc(event.eventName)}</div>
+          </div>
+          <span class="demand-badge badge-${event.demand}">
+            ${demandIcon[event.demand]} ${event.demand}
+          </span>
+        </div>
+        <div class="demand-metrics">
+          <div class="metric">
+            <div class="metric-value" style="color:var(--purple)">${event.activeOptions}</div>
+            <div class="metric-label">Active Options</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">${event.avgPremiumSOL?.toFixed(1)} SOL</div>
+            <div class="metric-label">Avg Premium</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">${event.maxPremiumSOL} SOL</div>
+            <div class="metric-label">Max Premium</div>
+          </div>
+        </div>
+        <div class="venue-share">
+          <span class="venue-share-label">Your 10% royalty share</span>
+          <span class="venue-share-value">${event.venueShareSOL?.toFixed(2)} SOL</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderInsights(intel) {
+    const container = document.getElementById('insights-container');
+    const insights = generateInsights(intel);
+    container.innerHTML = insights.map(i =>
+      `<div class="insight-card"><span class="insight-icon">💡</span>${i}</div>`
+    ).join('');
+  }
+
+  function generateInsights(intel) {
+    const insights = [];
+    const events = intel.events || [];
+
+    for (const e of events) {
+      if (e.demand === 'CRITICAL') {
+        insights.push(`<strong>${esc(e.eventName)}</strong> premiums avg ${e.avgPremiumSOL?.toFixed(1)} SOL — this show is sold out but demand is unmet. Adding a late show could capture 40%+ more revenue.`);
+      } else if (e.demand === 'HIGH') {
+        insights.push(`<strong>${esc(e.eventName)}</strong> has ${e.activeOptions} active options with ${e.avgPremiumSOL?.toFixed(1)} SOL avg premium. Demand is growing — consider a larger venue for the next booking.`);
+      } else if (e.demand === 'LOW' && e.totalOptions === 0) {
+        insights.push(`<strong>${esc(e.eventName)}</strong> has no active options. Either demand is low, or the event hasn't been listed for holding yet.`);
+      }
+    }
+
+    insights.push(`At the current 10% royalty rate, Quorum has generated <strong>${intel.totalVenueShareSOL?.toFixed(2)} SOL</strong> for the venue. Raise royalty rates on high-demand events to capture more upside.`);
+
+    if (intel.activeOptionsCount > 0) {
+      insights.push(`${intel.activeOptionsCount} fans are currently paying hold fees (~$0.10/cycle) just to keep options open. This is demand you'd otherwise never see — it's your waitlist with a price.`);
+    }
+
+    return insights;
+  }
+
+  function renderContractsTable(options) {
+    const tbody = document.getElementById('contracts-table-body');
+    if (!options?.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text-muted);text-align:center;padding:20px;">No contracts found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = options.map(opt => {
+      const expiry = new Date(opt.expiry * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const venueShareSOL = (opt.premiumSOL * (opt.venueRoyaltyBps / 10000)).toFixed(2);
+
+      return `
+        <tr>
+          <td><strong>${esc(opt.eventName)}</strong></td>
+          <td>${esc(opt.eventDate)}</td>
+          <td>${opt.quantity}</td>
+          <td>${esc(opt.ticketType)}</td>
+          <td style="color:var(--purple);font-weight:700">${opt.premiumSOL} SOL</td>
+          <td>${expiry}</td>
+          <td><span class="status-pill status-${opt.status}">${opt.status}</span></td>
+          <td style="color:var(--green)">${venueShareSOL} SOL</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>

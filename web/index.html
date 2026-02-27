@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QUORUM — Lock in tickets while your group chat makes up its mind</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #e8e8e8;
+      --text-muted: #888;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59,130,246,0.2);
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* HEADER */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #fff;
+    }
+    .logo span { color: var(--accent); }
+    .tagline {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .header-badges {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .badge-solana {
+      background: rgba(153,69,255,0.15);
+      color: #9945ff;
+      border: 1px solid rgba(153,69,255,0.3);
+    }
+    .badge-hackathon {
+      background: rgba(59,130,246,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+
+    /* LAYOUT */
+    main { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+    section { margin-bottom: 48px; }
+    section h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    section h2 .count {
+      font-size: 12px;
+      background: var(--surface2);
+      color: var(--text-muted);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+
+    /* GRID */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    /* EVENT CARD */
+    .event-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: default;
+    }
+    .event-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .event-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 32px;
+    }
+    .event-img img { width: 100%; height: 100%; object-fit: cover; }
+    .event-body { padding: 16px; }
+    .event-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .event-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .event-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .availability {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+    .available { background: rgba(34,197,94,0.15); color: var(--green); }
+    .low { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .sold_out { background: rgba(239,68,68,0.12); color: var(--red); }
+    .unknown { background: var(--surface2); color: var(--text-muted); }
+
+    .hold-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .hold-btn:hover { background: #2563eb; transform: scale(1.02); }
+    .hold-btn:disabled { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; transform: none; }
+
+    /* ACTIVE HOLDS */
+    .hold-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hold-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      animation: shimmer 2s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200px 0; }
+      100% { background-position: 200px 0; }
+    }
+    .hold-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .hold-event { font-size: 15px; font-weight: 700; }
+    .hold-tickets { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .hold-status { font-size: 12px; font-weight: 600; }
+    .status-active { color: var(--green); }
+    .status-error { color: var(--red); }
+    .status-buying { color: var(--yellow); }
+
+    .hold-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 18px; font-weight: 700; color: #fff; }
+    .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .hold-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-buy {
+      flex: 1;
+      background: var(--green);
+      color: #000;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-buy:hover { opacity: 0.9; }
+    .btn-drop {
+      flex: 1;
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-drop:hover { background: rgba(239,68,68,0.1); }
+
+    .cycle-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .owe-text {
+      font-size: 12px;
+      color: var(--accent);
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* OPTION CONTRACTS */
+    .option-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+    .option-event { font-weight: 700; font-size: 14px; }
+    .option-details { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .option-premium {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--purple);
+      text-align: right;
+    }
+    .option-premium-label { font-size: 11px; color: var(--text-muted); text-align: right; }
+    .option-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-top: 6px;
+    }
+    .status-Active { background: rgba(34,197,94,0.15); color: var(--green); }
+    .status-Exercised { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .status-Expired { background: var(--surface2); color: var(--text-muted); }
+    .explorer-link { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block; }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 440px;
+      width: 100%;
+    }
+    .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+      margin-top: -4px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .duration-options { display: flex; gap: 8px; }
+    .duration-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .duration-btn.selected { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
+    .duration-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+    .duration-label { font-weight: 700; font-size: 14px; }
+    .duration-price { color: var(--accent); margin-top: 2px; }
+    .duration-coming-soon { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .lock-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    .lock-btn:hover { opacity: 0.9; }
+
+    /* BUY MODAL */
+    .buy-modal input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .confirm-buy-btn {
+      width: 100%;
+      background: var(--green);
+      color: #000;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
+    .empty-state .emoji { font-size: 32px; margin-bottom: 12px; }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s, transform 0.3s;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 48px;
+    }
+    footer a { color: var(--text-muted); }
+
+    /* LOADING */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      header { padding: 16px; }
+      main { padding: 16px; }
+      .hold-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">QU<span>O</span>RUM</div>
+    <div class="tagline">Lock in ticket prices while your group chat makes up its mind</div>
+  </div>
+  <div class="header-badges">
+    <a href="/venue-intel" class="badge badge-hackathon">📊 Venue Intel →</a>
+    <span class="badge badge-solana">⚡ Powered by Solana</span>
+    <span class="badge badge-hackathon">Solana Graveyard × KYD Labs</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- EVENTS SECTION -->
+  <section>
+    <h2>🎫 Upcoming LPR Events <span class="count" id="events-count">Loading...</span></h2>
+    <div id="events-grid" class="cards-grid">
+      <div class="empty-state">
+        <div class="emoji"><span class="spinner"></span></div>
+        <div>Scraping KYD Labs... (React takes a sec)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTIVE HOLDS SECTION -->
+  <section>
+    <h2>⏳ Active Holds <span class="count" id="holds-count">0</span></h2>
+    <div id="holds-grid" class="cards-grid">
+      <div class="empty-state" id="holds-empty">
+        <div class="emoji">💤</div>
+        <div>No active holds. Click HOLD on any event above to start.</div>
+        <div style="margin-top:8px;font-size:11px;">Or text the bot to start a hold via iMessage.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPTION CONTRACTS SECTION -->
+  <section>
+    <h2>📜 On-Chain Option Contracts <span class="count" id="options-count">Loading...</span></h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+      Option contracts deployed on Solana devnet. Each premium reveals true demand intensity —
+      what a flat-price waitlist can never show.
+    </p>
+    <div id="options-grid" class="cards-grid">
+      <div class="empty-state">
+        <div><span class="spinner"></span> Loading from chain...</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- HOLD MODAL -->
+<div class="modal-overlay hidden" id="hold-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h3>🎫 Lock In Your Tickets</h3>
+    <div id="modal-event-name" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;"></div>
+
+    <div class="form-group">
+      <label>Ticket Type</label>
+      <select id="modal-ticket-type">
+        <option value="GA">General Admission</option>
+        <option value="VIP">VIP</option>
+        <option value="First Release">First Release</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Quantity</label>
+      <select id="modal-quantity">
+        <option value="1">1 ticket</option>
+        <option value="2" selected>2 tickets</option>
+        <option value="3">3 tickets</option>
+        <option value="4">4 tickets</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Lock Duration (Option Premium)</label>
+      <div class="duration-options">
+        <div class="duration-btn selected" onclick="selectDuration(this, 3, 5)">
+          <div class="duration-label">3 days</div>
+          <div class="duration-price">5 SOL</div>
+        </div>
+        <div class="duration-btn" onclick="selectDuration(this, 7, 10)">
+          <div class="duration-label">7 days</div>
+          <div class="duration-price">10 SOL</div>
+        </div>
+        <div class="duration-btn disabled" onclick="">
+          <div class="duration-label">30 days</div>
+          <div class="duration-price" style="color:var(--text-muted)">25 SOL</div>
+          <div class="duration-coming-soon">coming soon</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="lock-btn" onclick="startHold()">🔒 Lock It In</button>
+
+    <div style="font-size:11px;color:var(--text-muted);margin-top:12px;text-align:center;">
+      Hold fee: ~$0.10/cycle (every ~5 min) • Cancel anytime with DROP
+    </div>
+  </div>
+</div>
+
+<!-- BUY MODAL -->
+<div class="modal-overlay hidden" id="buy-modal">
+  <div class="modal buy-modal">
+    <button class="modal-close" onclick="closeBuyModal()">×</button>
+    <h3>💳 Complete Your Purchase</h3>
+    <div id="buy-modal-details" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;"></div>
+    <input type="text" id="buy-name" placeholder="Full Name" />
+    <input type="email" id="buy-email" placeholder="Email address" />
+    <button class="confirm-buy-btn" onclick="confirmBuy()">✅ Buy Tickets</button>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center;">
+      This will complete the KYD checkout with your current hold.
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<footer>
+  Built with 🫠 and checkout timeouts &nbsp;|&nbsp;
+  <a href="/venue-intel">Venue Intelligence Panel</a> &nbsp;|&nbsp;
+  <a href="https://github.com/roninbuilds/quorum" target="_blank">GitHub</a> &nbsp;|&nbsp;
+  Solana Graveyard Hackathon × KYD Labs $5K Ticketing Bounty
+</footer>
+
+<script>
+  // ==============================
+  // STATE
+  // ==============================
+  let currentModalEvent = null;
+  let selectedDurationDays = 3;
+  let selectedPremiumSOL = 5;
+  let currentBuyHoldId = null;
+  let holdsRefreshInterval = null;
+
+  // ==============================
+  // INIT
+  // ==============================
+  document.addEventListener('DOMContentLoaded', () => {
+    loadEvents();
+    loadOptions();
+    loadHolds();
+    holdsRefreshInterval = setInterval(loadHolds, 5000); // refresh holds every 5s
+  });
+
+  // ==============================
+  // EVENTS
+  // ==============================
+  async function loadEvents() {
+    try {
+      const res = await fetch('/api/events');
+      const data = await res.json();
+
+      const grid = document.getElementById('events-grid');
+      const countEl = document.getElementById('events-count');
+
+      if (!data.success || !data.events?.length) {
+        grid.innerHTML = `<div class="empty-state"><div class="emoji">😕</div><div>Could not load events. KYD might be having a moment.</div></div>`;
+        countEl.textContent = '0';
+        return;
+      }
+
+      countEl.textContent = data.events.length;
+      grid.innerHTML = data.events.map(event => renderEventCard(event)).join('');
+    } catch (err) {
+      document.getElementById('events-grid').innerHTML =
+        `<div class="empty-state"><div class="emoji">⚠️</div><div>Error loading events: ${err.message}</div></div>`;
+    }
+  }
+
+  function renderEventCard(event) {
+    const statusLabel = { available: 'Available', low: 'Low Tickets', sold_out: 'Sold Out', unknown: 'Unknown' };
+    const isSoldOut = event.status === 'sold_out';
+
+    const imgContent = event.imageUrl
+      ? `<img src="${event.imageUrl}" alt="${escHtml(event.name)}" onerror="this.parentElement.textContent='🎵'">`
+      : '🎵';
+
+    return `
+      <div class="event-card">
+        <div class="event-img">${imgContent}</div>
+        <div class="event-body">
+          <div class="event-name" title="${escHtml(event.name)}">${escHtml(event.name)}</div>
+          <div class="event-meta">
+            ${event.date ? escHtml(event.date) + (event.time ? ' · ' + escHtml(event.time) : '') : 'Date TBD'}
+            ${event.price ? ' · ' + escHtml(event.price) : ''}
+          </div>
+          <div class="event-footer">
+            <span class="availability ${event.status}">${statusLabel[event.status] || event.status}</span>
+            <button class="hold-btn"
+              ${isSoldOut ? 'disabled' : ''}
+              onclick="openHoldModal(${escJson(event)})">
+              ${isSoldOut ? 'Sold Out' : 'HOLD'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==============================
+  // ACTIVE HOLDS
+  // ==============================
+  async function loadHolds() {
+    try {
+      const res = await fetch('/api/holds');
+      const data = await res.json();
+
+      const grid = document.getElementById('holds-grid');
+      const countEl = document.getElementById('holds-count');
+      const emptyEl = document.getElementById('holds-empty');
+
+      if (!data.success || !data.holds?.length) {
+        countEl.textContent = '0';
+        if (emptyEl) emptyEl.style.display = '';
+        return;
+      }
+
+      if (emptyEl) emptyEl.style.display = 'none';
+      countEl.textContent = data.holds.length;
+
+      // Only re-render if content changed (preserve timer animations)
+      const newHtml = data.holds.map(h => renderHoldCard(h)).join('');
+      if (grid.dataset.lastHtml !== newHtml) {
+        grid.innerHTML = newHtml;
+        grid.dataset.lastHtml = newHtml;
+      }
+    } catch (err) {
+      // Silently fail — holds section is optional
+    }
+  }
+
+  function renderHoldCard(hold) {
+    const elapsed = Math.floor((Date.now() - hold.startTime) / 1000);
+    const elapsedStr = formatElapsed(elapsed);
+    const feeDollars = hold.feeDollars || '0.00';
+    const statusClass = 'status-' + hold.status;
+
+    return `
+      <div class="hold-card">
+        <div class="hold-header">
+          <div>
+            <div class="hold-event">${escHtml(hold.eventName)}</div>
+            <div class="hold-tickets">${hold.quantity}× ${escHtml(hold.ticketType)}</div>
+          </div>
+          <span class="hold-status ${statusClass}">${hold.status.toUpperCase()}</span>
+        </div>
+        <div class="hold-stats">
+          <div class="stat">
+            <div class="stat-value" id="timer-${hold.holdId}">${elapsedStr}</div>
+            <div class="stat-label">Elapsed</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">${hold.cycleCount}</div>
+            <div class="stat-label">Cycles</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">$${feeDollars}</div>
+            <div class="stat-label">Hold Fees</div>
+          </div>
+        </div>
+        <div class="hold-actions">
+          <button class="btn-buy" onclick="openBuyModal('${hold.holdId}', '${escHtml(hold.eventName)}', ${hold.quantity})">
+            💳 BUY
+          </button>
+          <button class="btn-drop" onclick="dropHold('${hold.holdId}')">
+            🗑 DROP
+          </button>
+        </div>
+        <div class="cycle-indicator">
+          <div class="pulse-dot"></div>
+          Bot is cycling checkout every ~5 min
+        </div>
+        <div class="owe-text">Your friends owe you $${feeDollars} in hold fees so far 😅</div>
+      </div>
+    `;
+  }
+
+  function formatElapsed(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  // ==============================
+  // OPTIONS
+  // ==============================
+  async function loadOptions() {
+    try {
+      const res = await fetch('/api/options');
+      const data = await res.json();
+
+      const grid = document.getElementById('options-grid');
+      const countEl = document.getElementById('options-count');
+
+      if (!data.success || !data.options?.length) {
+        grid.innerHTML = `<div class="empty-state"><div>No option contracts found. Deploy the Anchor program first.</div></div>`;
+        countEl.textContent = '0';
+        return;
+      }
+
+      countEl.textContent = data.options.length;
+      grid.innerHTML = data.options.map(opt => renderOptionCard(opt)).join('');
+    } catch (err) {
+      document.getElementById('options-grid').innerHTML =
+        `<div class="empty-state">Error loading options: ${err.message}</div>`;
+    }
+  }
+
+  function renderOptionCard(opt) {
+    const expiry = new Date(opt.expiry * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    return `
+      <div class="option-card">
+        <div>
+          <div class="option-event">${escHtml(opt.eventName)}</div>
+          <div class="option-details">
+            ${opt.quantity}× ${escHtml(opt.ticketType)} · ${escHtml(opt.eventDate)}<br>
+            Expiry: ${expiry} · Venue royalty: ${(opt.venueRoyaltyBps/100).toFixed(0)}%
+          </div>
+          <span class="option-status status-${opt.status}">${opt.status}</span>
+          ${opt.explorerUrl ? `<a href="${opt.explorerUrl}" target="_blank" class="explorer-link">View on Solana Explorer ↗</a>` : ''}
+        </div>
+        <div>
+          <div class="option-premium">${opt.premiumSOL} SOL</div>
+          <div class="option-premium-label">Premium Paid</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==============================
+  // HOLD MODAL
+  // ==============================
+  function openHoldModal(event) {
+    currentModalEvent = event;
+    document.getElementById('modal-event-name').textContent =
+      `${event.name} · ${event.date || ''} ${event.time || ''} · ${event.price || ''}`;
+    document.getElementById('hold-modal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('hold-modal').classList.add('hidden');
+    currentModalEvent = null;
+  }
+
+  function selectDuration(btn, days, sol) {
+    document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedDurationDays = days;
+    selectedPremiumSOL = sol;
+  }
+
+  async function startHold() {
+    if (!currentModalEvent) return;
+
+    const ticketType = document.getElementById('modal-ticket-type').value;
+    const quantity = parseInt(document.getElementById('modal-quantity').value);
+
+    try {
+      const res = await fetch('/api/hold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventUrl: currentModalEvent.eventUrl,
+          eventName: currentModalEvent.name,
+          quantity,
+          ticketType,
+        }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast(`✅ Hold started for ${currentModalEvent.name}! Bot is cycling checkout now.`);
+        closeModal();
+        setTimeout(loadHolds, 1000);
+      } else {
+        showToast(`❌ Error: ${data.error}`);
+      }
+    } catch (err) {
+      showToast(`❌ Failed to start hold: ${err.message}`);
+    }
+  }
+
+  // ==============================
+  // BUY MODAL
+  // ==============================
+  function openBuyModal(holdId, eventName, quantity) {
+    currentBuyHoldId = holdId;
+    document.getElementById('buy-modal-details').textContent = `${quantity}× ${eventName}`;
+    document.getElementById('buy-modal').classList.remove('hidden');
+  }
+
+  function closeBuyModal() {
+    document.getElementById('buy-modal').classList.add('hidden');
+    currentBuyHoldId = null;
+  }
+
+  async function confirmBuy() {
+    if (!currentBuyHoldId) return;
+    const name = document.getElementById('buy-name').value.trim();
+    const email = document.getElementById('buy-email').value.trim();
+
+    if (!name || !email) {
+      showToast('Please fill in your name and email.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/hold/${currentBuyHoldId}/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('🎉 Purchase initiated! The bot is completing your checkout now.');
+        closeBuyModal();
+        setTimeout(loadHolds, 1000);
+      } else {
+        showToast(`❌ Error: ${data.error}`);
+      }
+    } catch (err) {
+      showToast(`❌ Failed: ${err.message}`);
+    }
+  }
+
+  // ==============================
+  // DROP HOLD
+  // ==============================
+  async function dropHold(holdId) {
+    if (!confirm('Release this hold? The tickets will be available for others.')) return;
+
+    try {
+      const res = await fetch(`/api/hold/${holdId}/drop`, { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('🗑 Hold released. Your friends owe you one.');
+        setTimeout(loadHolds, 500);
+      } else {
+        showToast(`❌ Error: ${data.error}`);
+      }
+    } catch (err) {
+      showToast(`❌ Failed: ${err.message}`);
+    }
+  }
+
+  // ==============================
+  // UTILS
+  // ==============================
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escJson(obj) {
+    return JSON.stringify(obj).replace(/'/g, "\\'").replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+  }
+
+  // Close modals on overlay click
+  document.getElementById('hold-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById('buy-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeBuyModal();
+  });
+</script>
+</body>
+</html>

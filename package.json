@@ -1,0 +1,47 @@
+{
+  "name": "quorum",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node server/index.ts",
+    "dev": "NODE_ENV=development ts-node server/index.ts",
+    "build": "tsc",
+    "sms": "ts-node bot/sms-loop.ts",
+    "test:imessage": "ts-node bot/imessage-reader.ts",
+    "test:scraper": "ts-node bot/scraper.ts",
+    "test:auth": "ts-node -e \"const {chromium}=require('playwright');const {runLiveAuthTest}=require('./bot/kyd-auth');(async()=>{const b=await chromium.launch({headless:false});const r=await runLiveAuthTest(b);await b.close();process.exit(r?0:1)})()\"",
+    "test:chat": "ts-node bot/test-chat-agent.ts",
+    "security-audit": "bash tests/security-audit.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roninbuilds/quorum.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/roninbuilds/quorum/issues"
+  },
+  "homepage": "https://github.com/roninbuilds/quorum#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@solana/kit": "^6.1.0",
+    "@solana/web3.js": "^1.98.4",
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

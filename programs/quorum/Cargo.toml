@@ -1,0 +1,19 @@
+[package]
+name = "quorum"
+version = "0.1.0"
+description = "Ticket options protocol — because your group chat is indecisive"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "quorum"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.30.1"

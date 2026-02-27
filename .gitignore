@@ -1,0 +1,16 @@
+.env
+node_modules/
+target/
+*-keypair.json
+Sol Keypair.txt
+dist/
+playwright/.auth/
+.playwright/
+*.log
+.DS_Store
+.anchor/
+test-ledger/
+kyd-recording*.js
+kyd-recording*.ts
+*.rtf
+quorum-chat-api-key*
