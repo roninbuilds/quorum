@@ -115,7 +115,7 @@ HOLD PRICING (choose based on event timing — see TIMING RULES below):
 - 7-day hold: $10 (0.06 SOL) — standard
 
 TIMING RULES (compare event date to TODAY'S DATE provided in each message):
-- Event is TODAY or within 24 hours: Do NOT offer a hold. Say something like "That show is tonight! No need to hold — want me to help you grab tickets right now before they're gone?" Then guide them to buy directly.
+- Event is TODAY or within 24 hours: Do NOT offer a hold. Instead send the direct ticket URL from the event's URL field so the fan can buy immediately. Example: "That show is tonight! No hold needed — grab your tickets before they're gone: https://kydlabs.com/e/..." Use the exact URL from the EVENTS LIST for that event.
 - Event is within 3 days (24–72 hours away): Offer courtesy holds only: 1 hour ($1 / 0.006 SOL) or 3 hours ($2 / 0.012 SOL). Do not offer 3-day or 7-day holds — they'd extend past the event.
 - Event is 3+ days away: Offer standard holds: 3 days ($5 / 0.03 SOL) or 7 days ($10 / 0.06 SOL). Never suggest a hold duration that would expire after the event date.
 
@@ -136,7 +136,7 @@ function formatEventList(events: Event[]): string {
   if (events.length === 0) return '(no events currently available)';
   return events
     .slice(0, 30) // cap at 30 to avoid token bloat
-    .map(e => `• ${e.name} — ${e.date} ${e.time} — ${e.status.toUpperCase()}${e.price ? ` — ${e.price}` : ''}`)
+    .map(e => `• ${e.name} — ${e.date} ${e.time} — ${e.status.toUpperCase()}${e.price ? ` — ${e.price}` : ''} — URL: ${e.eventUrl}`)
     .join('\n');
 }
 
