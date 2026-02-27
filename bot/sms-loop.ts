@@ -135,7 +135,7 @@ async function tick(): Promise<void> {
       // Demo shortcut: "eggy" triggers a hardcoded Blink payment reply for filming
       let reply: string;
       if (msg.text.trim().toLowerCase() === 'eggy') {
-        reply = 'QUORUM 🎫 Locked in! 4x GA for Y2K Party — 3-day hold at $5 (0.03 SOL). Pay to confirm:\n\nhttps://dial.to/?action=solana-action:https://quorum.app/pay/hold-001';
+        reply = 'QUORUM 🎫 Locked in! 5x VIP for Emo Night Brooklyn (Mar 20) — 7-day hold at $10 (0.06 SOL). Pay to confirm:\n\nhttps://dial.to/?action=solana-action:https://quorum.app/pay/hold-001';
         log(`  🎬 Demo trigger "eggy" — sending hardcoded Blink reply`);
       } else {
         // Route to LLM agent

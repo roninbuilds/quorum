@@ -1,283 +1,137 @@
-# QUORUM
-### Lock in ticket prices while your group chat makes up its mind
-
-> Built for the Solana Graveyard Hackathon × KYD Labs $5K Ticketing Bounty
-
----
-
-## Act 1: The Vision
-
-Ticket options are a new financial primitive for live events.
-
-Right now, every group attending a show goes through the same painful loop: "Are we doing this?" "I don't know, let me check." "It sold out while you were checking." The coordination problem is real, and it costs venues revenue and fans experiences.
-
-**Quorum fixes this with a call options market on tickets.**
-
-- **Fans** pay a small SOL premium to lock in their right to buy tickets at face value for up to 7 days ($5 for 3 days / $10 for 7 days). No more FOMO, no more group chat paralysis.
-- **Venues** earn royalties on option premiums — and more importantly, they get demand intelligence they currently leave on the table. When fans pay to lock in a sold-out show, that's a signal. Add a late show. Book a bigger venue next time.
-- **Options premiums reveal real demand intensity** — something a flat-price waitlist can *never* capture. Your waitlist tells you *how many* people want tickets. The options market tells you *how badly*.
+# QUORUM 🎫
+### Lock in ticket prices while your group chat makes up its mind.
+**Built for Solana Graveyard Hackathon × KYD Labs Ticketing Bounty**
 
 ---
 
-## Act 2: The Hack
+## The Problem
 
-KYD Labs has no API. Tickets aren't programmatically transferable. Everything is manual.
+Every friend group has that one person. "Let me check my schedule." "I think I might have something that day." "Can you send me the link again?" Meanwhile, tickets sell out or prices climb. Group coordination is where ticket purchases go to die.
 
-So we built a bot.
+## The Solution
+
+Text Quorum. Tell it what show, how many tickets, and how long your flaky friends need to decide. Quorum holds your tickets at face value while your group chat sorts itself out. Pay a small premium ($5-$10), and an autonomous agent keeps your tickets locked in. When everyone commits, text BUY. If plans fall apart, text DROP.
+
+## How It Works
 
 ```
-KYD checkout has a ~4:55 hold timer
-                    ↓
-Bot clicks "Get N Tickets"
-                    ↓
-Timer starts. Tickets held.
-                    ↓
-Bot waits 4:55 for "Continue Shopping"
-                    ↓
-Bot clicks it. Resets. Repeat.
-                    ↓
-Tickets held indefinitely. For pennies.
+Fan texts "Hey Quorum, hold 5 tickets to Emo Night"
+  → LLM agent parses request, finds event, confirms details
+    → Fan pays premium via Solana Blink
+      → Anchor program creates on-chain options contract
+        → Playwright bot logs into KYD, adds tickets, starts checkout
+          → Every ~5 min, bot cycles checkout timeout to maintain hold
+            → Fan texts BUY → purchase completed
+            → Fan texts DROP → hold released
 ```
-
-The bot:
-1. **Reads 2FA codes from iMessage** via macOS `chat.db` SQLite — no manual copy-paste
-2. **Logs into KYD via Playwright** — full browser rendering, handles React SPAs
-3. **Cycles the checkout timer in a loop** — click Add → Get N Tickets → wait → Continue Shopping → repeat
-4. **Accepts fan commands via SMS** — text "HOLD 2 Florist" and the bot starts holding
-5. **Creates Solana option contracts** — fans pay SOL premium, get on-chain proof of their option
-
-Fans text a phone number. The bot holds their tickets and charges them `$0.10/cycle`. The options market generates demand intelligence for venues.
-
-Yes, this is absurd. That's the point.
-
----
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Fan's Phone                         │
-│  "HOLD 2 Florist" → SMS → iMessage on Mac Mini          │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────┐
-│                   bot/imessage-reader.ts                 │
-│   Polls ~/Library/Messages/chat.db every 5 seconds      │
-│   Parses commands: hold/buy/drop/status/events           │
-└───────────┬─────────────────────────────────────────────┘
-            │                          │
-            ▼                          ▼
-┌───────────────────┐    ┌────────────────────────────────┐
-│  bot/holder.ts    │    │      server/solana.ts           │
-│  Playwright loop  │    │  Creates on-chain OptionContract│
-│  Cycles KYD       │    │  PDA on Solana devnet          │
-│  checkout timer   │    │  programs/quorum/src/lib.rs    │
-└───────┬───────────┘    └────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────────────┐
-│                  server/index.ts (Express)               │
-│                                                         │
-│  GET  /api/events       → scraped LPR event listings    │
-│  POST /api/hold         → start hold cycle              │
-│  GET  /api/options      → on-chain option contracts     │
-│  GET  /api/venue-intel  → demand intelligence           │
-│  GET  /api/blink/:id    → Solana Actions descriptor     │
-│  POST /api/blink/:id/pay → base64 option tx             │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────┐
-│                    web/index.html                        │
-│  Events grid · Active holds with live timer             │
-│  Option contracts from chain · Buy/Drop buttons         │
-│                                                         │
-│                 web/venue-intel.html                    │
-│  Demand signals · Revenue intelligence · Insights       │
-└─────────────────────────────────────────────────────────┘
+Fan (SMS) → iMessage (chat.db) → LLM Agent (Claude Sonnet)
+                                       ↓
+                               Playwright Bot → KYD Labs checkout
+                                       ↓
+                         Solana Blink → Anchor Program (devnet)
+                                       ↓
+                         Web Dashboard → Venue Intelligence Panel
 ```
 
----
+## The Bigger Picture: Why Everyone Wins
+
+**For Fans:** Price protection while coordinating with friends. No more "sorry, sold out."
+
+**For Venues:** Right now, when a show sells out, the demand premium goes to scalpers. Venues see none of that money and learn nothing from that demand. Quorum turns the scalping premium into transparent on-chain options pricing. Venues earn royalties on every premium. When 50 people pay $8 each to hold Friday tickets, that's a signal — book a second night, raise base prices, rebook the artist. Options premiums are demand intelligence that waitlists can never provide.
+
+**For Speculators:** Scalpers become legitimate market makers. Buy early bird tickets, write call options, profit from time premiums as the event approaches. The secondary market doesn't die — it becomes transparent, on-chain, and everyone gets a cut.
+
+**For KYD/Tix Protocol:** This isn't a separate product. It's what KYD's waitlist should become. Quorum monetizes waitlists in data-informed, customer-savvy ways.
+
+## The Hack (How We Actually Built This)
+
+KYD Labs has no API. Tickets aren't programmatically transferable. The checkout flow is entirely manual. So we got creative:
+
+- 🤖 Bot reads SMS 2FA codes directly from macOS iMessage (chat.db SQLite)
+- 🎭 Playwright automates the entire KYD checkout flow in a real browser
+- ⏱️ The 5-minute checkout timeout becomes a renewable reservation primitive
+- 💬 Claude Sonnet parses natural language texts into structured ticket hold requests
+- ⛓️ Solana Anchor program logs options contracts on-chain
+- 🔗 Blinks enable wallet payments via text message links
+- 📱 macOS AppleScript sends SMS responses (because Twilio rejected our A2P campaign)
+
+Yes, this is absurd. That's the point.
+
+## Hold Pricing
+
+| Duration | Price | SOL (devnet) | Use Case |
+|----------|-------|-------------|----------|
+| 1 hour | $1 | 0.006 SOL | Same-week events, quick decisions |
+| 3 hours | $2 | 0.012 SOL | Day-of coordination |
+| 3 days | $5 | 0.03 SOL | Standard friend group deliberation |
+| 7 days | $10 | 0.06 SOL | The Sam in your group needs extra time |
+| 30 days | $25 | 0.15 SOL | Coming soon |
 
 ## Tech Stack
 
-| Layer | Tech |
-|-------|------|
-| On-chain program | Anchor 0.30.1 on Solana devnet |
-| Client-side Solana | @solana/kit (new school, not legacy web3.js) |
-| Bot/automation | Playwright (Chromium) |
-| iMessage integration | better-sqlite3 → macOS chat.db |
-| SMS commands | osascript AppleScript |
-| API server | Express.js + TypeScript |
-| Frontend | Vanilla JS, single HTML files, dark theme |
-| Runtime | Node.js + ts-node |
+- **Solana** (Anchor, Blinks, @solana/kit) — on-chain options contracts + payments
+- **Playwright** — autonomous browser agent for KYD checkout cycling
+- **Anthropic Claude Sonnet** — natural language SMS chatbot
+- **macOS iMessage + AppleScript** — SMS interface
+- **Express + TypeScript** — API server
+- **Vanilla HTML/JS** — dashboard + venue intelligence frontend
 
----
+## Solana Program
+
+- **Program ID:** FC1476pqPa9YtMiXVk2QTFMNEjfh8P16HiEM3DihHhqy
+- **Explorer:** https://explorer.solana.com/address/FC1476pqPa9YtMiXVk2QTFMNEjfh8P16HiEM3DihHhqy?cluster=devnet
+- **Instructions:** create_option, exercise_option, expire_option
+- **Accounts:** PDA-based OptionContract with full lifecycle (Active → Exercised/Expired)
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/events | Scraped LPR event listings (83 events) |
+| GET | /api/options | On-chain option contracts |
+| GET | /api/venue-intel | Aggregated demand intelligence |
+| POST | /api/hold | Start a ticket hold |
+| GET | /api/hold/:id/status | Hold status, cycles, fees |
+| POST | /api/hold/:id/buy | Complete purchase |
+| POST | /api/hold/:id/drop | Release hold |
+| GET | /api/blink/:holdId | Solana Action metadata |
+| POST | /api/blink/:holdId/pay | Build payment transaction |
+
+## Roadmap
+
+🔜 **KYD API Integration** — Replace checkout timeout abuse with proper programmatic access. This is simultaneously a prototype and a feature request. Dear KYD: build the API. We'll build the options market.
+
+🔜 **Waitlist-as-Options-Market** — Every sold-out show gets a derivatives market. The waitlist becomes an orderbook. People who want tickets most (highest premium) get served first. Venues capture revenue they currently lose to StubHub.
+
+🔜 **Two-Sided Options Market** — Let speculators write calls on tickets they hold. Early bird buyers sell upside to latecomers. As events approach, willingness to pay increases, premiums adjust dynamically. Real price discovery for live events.
+
+🔜 **Multi-Phone Scaling** — Each phone = one more concurrent event hold. A rack of phones = an options desk. (Yes, this is absurd. That's why KYD needs an API.)
+
+🔜 **Venue Analytics Dashboard** — Premium-based demand forecasting. Dynamic pricing recommendations. Revenue attribution from options vs face-value sales.
+
+🔜 **Twilio Integration** — We tried. They rejected our A2P 10DLC campaign registration. The "plug your phone into your Mac" approach is both our hack and a genuine gap in the agent developer ecosystem.
+
+🔜 **Audius Integration** — Artist-specific demand signals from streaming data to predict ticket demand before events are even announced.
 
 ## Running Locally
 
-### Prerequisites
-- macOS with iMessage set up (for 2FA + fan commands)
-- Full Disk Access for Terminal: System Settings → Privacy & Security → Full Disk Access
-- Solana CLI + Anchor 0.30.1
-- Node.js 18+
-
-### Setup
-
 ```bash
-# Clone and install
 git clone https://github.com/roninbuilds/quorum
 cd quorum
 npm install
-
-# Install Playwright browsers
 npx playwright install chromium
-
-# Configure environment
-cp .env.example .env  # or edit .env directly
-
-# Set up Solana wallet (requires keypair)
-mkdir -p ~/.config/solana
-# copy your devnet keypair to ~/.config/solana/id.json
-
-# Verify balance (need ~2+ devnet SOL)
-solana balance --url devnet
+cp .env.example .env  # add your credentials
+npm run dev           # starts API server + SMS loop on localhost:3000
 ```
 
-### Start the server
+## Built With 🫠 and Checkout Timeouts
 
-```bash
-npm run dev
-# → http://localhost:3000
-# → http://localhost:3000/venue-intel
-```
-
-### Test iMessage integration
-
-```bash
-npm run test:imessage
-# Should show recent messages from chat.db
-# If fails: enable Full Disk Access for Terminal
-```
-
-### Test KYD scraper
-
-```bash
-npm run test:scraper
-# Scrapes real LPR events from kydlabs.com
-```
-
-### Deploy Anchor program (optional for full demo)
-
-```bash
-# Install Anchor CLI
-cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli --locked
-
-# Build and deploy
-anchor build
-anchor deploy --provider.cluster devnet
-
-# Update .env with deployed program ID
-echo "QUORUM_PROGRAM_ID=<your_program_id>" >> .env
-
-# Seed demo data
-ts-node server/seed-options.ts
-```
+Solana Graveyard Hackathon 2026 — KYD Labs Ticketing Bounty
 
 ---
 
-## SMS Command Reference
-
-Text the bot's phone number:
-
-```
-EVENTS                  → List upcoming LPR shows
-HOLD 2 Florist          → Hold 2 tickets to Florist
-STATUS                  → Check current hold status
-BUY                     → Purchase the held tickets
-DROP                    → Release the hold
-```
-
----
-
-## Security
-
-- Phone numbers and API keys in `.env` only — never in source
-- Fan personal data (name, email) held in memory only — never persisted to disk
-- OTP codes not logged in production (`NODE_ENV=production`)
-- Run `npm run security-audit` before every commit
-
----
-
-## Option Pricing
-
-| Duration | USD | SOL |
-|---|---|---|
-| 3 days | $5 | 0.03 SOL |
-| 7 days | $10 | 0.06 SOL |
-| 30 days | $25 | 0.15 SOL (coming soon) |
-
----
-
-## Solana Blinks
-
-Quorum implements the [Solana Actions spec](https://solana.com/docs/advanced/actions). Any Blink-compatible wallet can pay the option premium without leaving Twitter/Telegram/Discord:
-
-```
-GET  /api/blink/:holdId              → Action JSON descriptor
-POST /api/blink/:holdId/pay?duration=3|7  → base64 wire-format transaction
-```
-
-The LLM chatbot sends a `https://dial.to/?action=solana-action:...` URL in SMS when the fan is ready to pay.
-
-For public Blinks URLs, run ngrok and set `PUBLIC_URL` in `.env`:
-
-```bash
-ngrok http 3000
-# export PUBLIC_URL=https://xxxx.ngrok-free.app
-```
-
----
-
-## LLM SMS Chatbot
-
-Quorum includes a Claude claude-sonnet-4-6 powered chatbot that handles freeform fan messages over iMessage:
-
-- Parses natural language: "hold 2 GA for Florist this Saturday, 3 days"
-- Maintains per-conversation history (last 10 turns per phone number)
-- Rate-limits to 20 API calls/phone/hour
-- Guards against prompt injection and jailbreak attempts
-- Sends Solana Blink payment URL when ready to lock the hold
-- Logs cost per call and alerts at $2 cumulative
-
-```bash
-# Test the chatbot directly
-npm run test:chat
-```
-
----
-
-## Act 3: The Ask
-
-Dear KYD Labs:
-
-**Please build an API.**
-
-With proper programmatic access to Tix, Quorum becomes a real options protocol:
-
-- Fans get proper financial instruments — on-chain call options with price protection
-- Venues set royalty rates on option premiums and earn from demand they currently give away to StubHub
-- The options market generates demand intelligence that transforms how you book, price, and expand shows
-- Every option contract on-chain is a data point: this event has 12 active options averaging 6 SOL premium. That means something.
-
-We built the janky version — a bot exploiting your checkout timeout to hold tickets in a loop. It works, it's hilarious, and it proves the concept.
-
-Now build the real one. The options market for live events is waiting.
-
----
-
-**Deployed Program:** [`FC1476pqPa9YtMiXVk2QTFMNEjfh8P16HiEM3DihHhqy`](https://explorer.solana.com/address/FC1476pqPa9YtMiXVk2QTFMNEjfh8P16HiEM3DihHhqy?cluster=devnet)
-
-*Built with 🫠 and checkout timeouts*
-*Solana Graveyard Hackathon × KYD Labs $5K Ticketing Bounty*
+*"We built the janky version to prove the concept. Now build the real one."*
