@@ -200,9 +200,19 @@ export async function processMessage(phone: string, text: string, events: Event[
 
     // (e) Topic guardrail: ensure reply always starts with QUORUM 🎫
     // Prepend it if missing rather than discarding a valid reply
-    const finalReply = reply.startsWith('QUORUM 🎫') ? reply : `QUORUM 🎫 ${reply}`;
+    let finalReply = reply.startsWith('QUORUM 🎫') ? reply : `QUORUM 🎫 ${reply}`;
     if (!reply.startsWith('QUORUM 🎫')) {
       console.log(`[chat-agent] ℹ️  Prepended "QUORUM 🎫" to response`);
+    }
+
+    // Append Blink payment link when the reply is asking the fan to pay / lock a hold
+    const BLINK_URL = 'https://dial.to/?action=solana-action:https://quorum.app/pay/hold-001';
+    const looksLikePaymentPrompt =
+      /\$\d/.test(finalReply) &&
+      /pay|lock|hold for|confirm|blink|solana/i.test(finalReply);
+    if (looksLikePaymentPrompt && !finalReply.includes('dial.to')) {
+      finalReply = `${finalReply}\n\n${BLINK_URL}`;
+      console.log(`[chat-agent] 💳 Appended Blink payment URL`);
     }
 
     // Store in history
