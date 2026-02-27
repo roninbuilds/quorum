@@ -94,9 +94,11 @@ function base58Decode(s: string): Buffer {
 }
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
-const DURATION_CONFIG: Record<string, { lamports: bigint; label: string }> = {
-  '3': { lamports: BigInt(30_000_000), label: '$5 (0.03 SOL) — 3-day hold' },
-  '7': { lamports: BigInt(60_000_000), label: '$10 (0.06 SOL) — 7-day hold' },
+const DURATION_CONFIG: Record<string, { lamports: bigint; label: string; expirySeconds: number }> = {
+  '1h': { lamports: BigInt(6_000_000),  label: '$1 (0.006 SOL) — 1-hour hold',  expirySeconds: 1 * 3600 },
+  '3h': { lamports: BigInt(12_000_000), label: '$2 (0.012 SOL) — 3-hour hold',  expirySeconds: 3 * 3600 },
+  '3':  { lamports: BigInt(30_000_000), label: '$5 (0.03 SOL) — 3-day hold',    expirySeconds: 3 * 86400 },
+  '7':  { lamports: BigInt(60_000_000), label: '$10 (0.06 SOL) — 7-day hold',   expirySeconds: 7 * 86400 },
 };
 
 // ─── GET /api/blink/:holdId ───────────────────────────────────────────────────
@@ -119,6 +121,14 @@ router.get('/:holdId', (req: Request, res: Response) => {
     label: 'Lock In Price',
     links: {
       actions: [
+        {
+          label: '$1 — 1-Hour Hold (0.006 SOL)',
+          href: `${PUBLIC_URL}/api/blink/${holdId}/pay?duration=1h`,
+        },
+        {
+          label: '$2 — 3-Hour Hold (0.012 SOL)',
+          href: `${PUBLIC_URL}/api/blink/${holdId}/pay?duration=3h`,
+        },
         {
           label: '$5 — 3-Day Hold (0.03 SOL)',
           href: `${PUBLIC_URL}/api/blink/${holdId}/pay?duration=3`,
@@ -157,8 +167,8 @@ router.post('/:holdId/pay', async (req: Request, res: Response) => {
     const quantity = hold?.quantity || 1;
 
     // Generate a unique option ID
-    const optionId = `${holdId}-${durationStr}d-${Date.now()}`;
-    const expiry = BigInt(Math.floor(Date.now() / 1000) + parseInt(durationStr) * 86400);
+    const optionId = `${holdId}-${durationStr}-${Date.now()}`;
+    const expiry = BigInt(Math.floor(Date.now() / 1000) + config.expirySeconds);
 
     // Derive PDA: seeds = ["option", optionId]
     const programAddr = address(PROGRAM_ID);

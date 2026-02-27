@@ -365,6 +365,19 @@
     }
     .duration-btn.selected { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
     .duration-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+    .duration-options { flex-wrap: wrap; }
+
+    .tonight-banner {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--yellow);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .hidden { display: none !important; }
     .duration-label { font-weight: 700; font-size: 14px; }
     .duration-price { color: var(--accent); margin-top: 2px; }
     .duration-coming-soon { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
@@ -529,48 +542,66 @@
     <h3>🎫 Lock In Your Tickets</h3>
     <div id="modal-event-name" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;"></div>
 
-    <div class="form-group">
-      <label>Ticket Type</label>
-      <select id="modal-ticket-type">
-        <option value="GA">General Admission</option>
-        <option value="VIP">VIP</option>
-        <option value="First Release">First Release</option>
-      </select>
+    <!-- Tonight banner — shown only when event is < 24 hours away -->
+    <div id="modal-tonight-banner" class="tonight-banner hidden">
+      🌙 This show is <strong>tonight</strong> — no need to hold. Grab tickets now before they sell out!
     </div>
 
-    <div class="form-group">
-      <label>Quantity</label>
-      <select id="modal-quantity">
-        <option value="1">1 ticket</option>
-        <option value="2" selected>2 tickets</option>
-        <option value="3">3 tickets</option>
-        <option value="4">4 tickets</option>
-      </select>
-    </div>
+    <!-- Hold form — hidden for same-day events -->
+    <div id="modal-hold-form">
+      <div class="form-group">
+        <label>Ticket Type</label>
+        <select id="modal-ticket-type">
+          <option value="GA">General Admission</option>
+          <option value="VIP">VIP</option>
+          <option value="First Release">First Release</option>
+        </select>
+      </div>
 
-    <div class="form-group">
-      <label>Lock Duration (Option Premium)</label>
-      <div class="duration-options">
-        <div class="duration-btn selected" onclick="selectDuration(this, 3, 0.03)">
-          <div class="duration-label">3 days</div>
-          <div class="duration-price">$5 (0.03 SOL)</div>
-        </div>
-        <div class="duration-btn" onclick="selectDuration(this, 7, 0.06)">
-          <div class="duration-label">7 days</div>
-          <div class="duration-price">$10 (0.06 SOL)</div>
-        </div>
-        <div class="duration-btn disabled" onclick="">
-          <div class="duration-label">30 days</div>
-          <div class="duration-price" style="color:var(--text-muted)">$25 (0.15 SOL)</div>
-          <div class="duration-coming-soon">coming soon</div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <select id="modal-quantity">
+          <option value="1">1 ticket</option>
+          <option value="2" selected>2 tickets</option>
+          <option value="3">3 tickets</option>
+          <option value="4">4 tickets</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label id="modal-duration-label">Lock Duration (Option Premium)</label>
+        <div class="duration-options">
+          <!-- Courtesy holds — shown only when event is 24–72 h away -->
+          <div class="duration-btn hidden" id="dur-1h" onclick="selectDuration(this, '1h', 0.006)">
+            <div class="duration-label">1 hour</div>
+            <div class="duration-price">$1 (0.006 SOL)</div>
+          </div>
+          <div class="duration-btn hidden" id="dur-3h" onclick="selectDuration(this, '3h', 0.012)">
+            <div class="duration-label">3 hours</div>
+            <div class="duration-price">$2 (0.012 SOL)</div>
+          </div>
+          <!-- Standard holds — shown when event is 3+ days away -->
+          <div class="duration-btn selected" id="dur-3d" onclick="selectDuration(this, '3d', 0.03)">
+            <div class="duration-label">3 days</div>
+            <div class="duration-price">$5 (0.03 SOL)</div>
+          </div>
+          <div class="duration-btn" id="dur-7d" onclick="selectDuration(this, '7d', 0.06)">
+            <div class="duration-label">7 days</div>
+            <div class="duration-price">$10 (0.06 SOL)</div>
+          </div>
+          <div class="duration-btn disabled" id="dur-30d">
+            <div class="duration-label">30 days</div>
+            <div class="duration-price" style="color:var(--text-muted)">$25 (0.15 SOL)</div>
+            <div class="duration-coming-soon">coming soon</div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <button class="lock-btn" onclick="startHold()">🔒 Lock It In</button>
+      <button class="lock-btn" onclick="startHold()">🔒 Lock It In</button>
 
-    <div style="font-size:11px;color:var(--text-muted);margin-top:12px;text-align:center;">
-      Hold fee: ~$0.10/cycle (every ~5 min) • Cancel anytime with DROP
+      <div style="font-size:11px;color:var(--text-muted);margin-top:12px;text-align:center;">
+        Hold fee: ~$0.10/cycle (every ~5 min) • Cancel anytime with DROP
+      </div>
     </div>
   </div>
 </div>
@@ -605,7 +636,7 @@
   // STATE
   // ==============================
   let currentModalEvent = null;
-  let selectedDurationDays = 3;
+  let selectedDurationKey = '3d';  // '1h' | '3h' | '3d' | '7d'
   let selectedPremiumSOL = 0.03;
   let currentBuyHoldId = null;
   let holdsRefreshInterval = null;
@@ -810,12 +841,88 @@
   }
 
   // ==============================
+  // HOLD MODAL — TIMING HELPERS
+  // ==============================
+
+  /**
+   * Parse a scraped event date+time into a JS Date.
+   * event.date example: "Feb 27"  event.time example: "6:00PM"
+   */
+  function parseEventDate(event) {
+    if (!event.date) return null;
+    const year = new Date().getFullYear();
+    // Normalize "6:00PM" → "6:00 PM" for Date constructor
+    const time = (event.time || '12:00 PM').replace(/([AP]M)/i, ' $1');
+    const d = new Date(`${event.date} ${year} ${time}`);
+    if (isNaN(d.getTime())) return null;
+    // If parsed date is more than 60 days in the past it's likely next year
+    if (d < new Date(Date.now() - 60 * 86400_000)) d.setFullYear(d.getFullYear() + 1);
+    return d;
+  }
+
+  /**
+   * Returns 'today' (< 24h), 'soon' (24–72h), or 'standard' (3+ days).
+   */
+  function getEventTiming(event) {
+    const d = parseEventDate(event);
+    if (!d) return 'standard';
+    const hoursUntil = (d - Date.now()) / 3_600_000;
+    if (hoursUntil < 0)  return 'past';
+    if (hoursUntil < 24) return 'today';
+    if (hoursUntil < 72) return 'soon';
+    return 'standard';
+  }
+
+  // ==============================
   // HOLD MODAL
   // ==============================
   function openHoldModal(event) {
     currentModalEvent = event;
     document.getElementById('modal-event-name').textContent =
       `${event.name} · ${event.date || ''} ${event.time || ''} · ${event.price || ''}`;
+
+    const timing = getEventTiming(event);
+    const tonightBanner = document.getElementById('modal-tonight-banner');
+    const holdForm     = document.getElementById('modal-hold-form');
+    const dur1h  = document.getElementById('dur-1h');
+    const dur3h  = document.getElementById('dur-3h');
+    const dur3d  = document.getElementById('dur-3d');
+    const dur7d  = document.getElementById('dur-7d');
+    const dur30d = document.getElementById('dur-30d');
+    const durLabel = document.getElementById('modal-duration-label');
+
+    // Reset all button states before applying new visibility
+    document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
+
+    if (timing === 'today' || timing === 'past') {
+      tonightBanner.classList.remove('hidden');
+      holdForm.classList.add('hidden');
+    } else if (timing === 'soon') {
+      tonightBanner.classList.add('hidden');
+      holdForm.classList.remove('hidden');
+      dur1h.classList.remove('hidden');
+      dur3h.classList.remove('hidden');
+      dur3d.classList.add('hidden');
+      dur7d.classList.add('hidden');
+      dur30d.classList.add('hidden');
+      dur1h.classList.add('selected');
+      selectedDurationKey = '1h';
+      selectedPremiumSOL = 0.006;
+      durLabel.textContent = 'Courtesy Hold Duration (show is soon!)';
+    } else {
+      tonightBanner.classList.add('hidden');
+      holdForm.classList.remove('hidden');
+      dur1h.classList.add('hidden');
+      dur3h.classList.add('hidden');
+      dur3d.classList.remove('hidden');
+      dur7d.classList.remove('hidden');
+      dur30d.classList.remove('hidden');
+      dur3d.classList.add('selected');
+      selectedDurationKey = '3d';
+      selectedPremiumSOL = 0.03;
+      durLabel.textContent = 'Lock Duration (Option Premium)';
+    }
+
     document.getElementById('hold-modal').classList.remove('hidden');
   }
 
@@ -824,10 +931,10 @@
     currentModalEvent = null;
   }
 
-  function selectDuration(btn, days, sol) {
-    document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
+  function selectDuration(btn, key, sol) {
+    document.querySelectorAll('.duration-btn:not(.disabled)').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
-    selectedDurationDays = days;
+    selectedDurationKey = key;
     selectedPremiumSOL = sol;
   }
 
