@@ -4,6 +4,10 @@
 
 ---
 
+> **NOTE FOR JUDGES:** If you'd like to try the live SMS texting functionality, please use the contact info submitted with the hackathon entry. Out of respect for KYD Labs and their customers, the checkout automation is currently turned off to avoid impacting the normal ticketing experience.
+
+---
+
 ## The Problem
 
 Every friend group has that one person. "Let me check my schedule." "I think I might have something that day." "Can you send me the link again?" Meanwhile, tickets sell out or prices climb. Group coordination is where ticket purchases go to die.

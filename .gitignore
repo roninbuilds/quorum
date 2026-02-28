@@ -13,4 +13,10 @@ test-ledger/
 kyd-recording*.js
 kyd-recording*.ts
 *.rtf
+*.aiff
+*.wav
+*.mp3
+*.mp4
+*.mov
+*.m4a
 quorum-chat-api-key*
